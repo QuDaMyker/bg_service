@@ -4,14 +4,69 @@ import 'package:bg_service/api_client.dart';
 import 'package:bg_service/bg/background_service_helper.dart';
 import 'package:bg_service/bg/compute_helper.dart';
 import 'package:bg_service/bg/isolate_helper.dart';
+import 'package:bg_service/bg/work_manager_helper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:workmanager/workmanager.dart';
+
+// Import the callback dispatcher
+export 'package:bg_service/bg/work_manager_helper.dart' show callbackDispatcher;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize but don't start automatically for better resource management
-  await BackgroundServiceHelper.initialize();
+
+  if (await Permission.notification.isDenied) {
+    await Permission.notification.request();
+  }
+
+  if (await Permission.scheduleExactAlarm.isDenied) {
+    await Permission.scheduleExactAlarm.request();
+  }
+
+  if (await Permission.location.isDenied) {
+    await Permission.location.request();
+  }
+
+  if (await Permission.locationAlways.isDenied) {
+    await Permission.locationAlways.request();
+  }
+
+  if (await Permission.locationWhenInUse.isDenied) {
+    await Permission.locationWhenInUse.request();
+  }
+
+  if (await Permission.ignoreBatteryOptimizations.isDenied) {
+    await Permission.ignoreBatteryOptimizations.request();
+  }
+
+  // Initialize WorkManager with callback dispatcher
+  await Workmanager().initialize(
+    callbackDispatcher,
+    isInDebugMode: kDebugMode, // Auto-detect debug mode
+  );
+
+  // Register task only once based on build mode
+  if (kDebugMode) {
+    // Debug: One-off task for quick testing (1 second delay)
+    await Workmanager().registerOneOffTask(
+      "debug_task",
+      "simpleTask",
+      initialDelay: const Duration(seconds: 1),
+      constraints: Constraints(networkType: NetworkType.connected),
+      existingWorkPolicy: ExistingWorkPolicy.keep, // Don't replace if exists
+    );
+  } else {
+    // Release: Register periodic task for every 15 minutes
+    await Workmanager().registerPeriodicTask(
+      "periodic_task",
+      "simpleTask",
+      frequency: const Duration(minutes: 15),
+      constraints: Constraints(networkType: NetworkType.connected),
+    );
+  }
+  print('WorkManager tasks registered.');
   runApp(const MyApp());
 }
 
@@ -140,35 +195,23 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
+            heroTag: 'work',
             onPressed: () async {
-              // Map<Permission, PermissionStatus> statuses = await [
-              //   Permission.location,
-              //   Permission.locationAlways,
-              //   Permission.locationWhenInUse,
-              // ].request();
-              await Permission.location
-                  .onDeniedCallback(() {
-                    // Your code
-                  })
-                  .onGrantedCallback(() {
-                    // Your code
-                  })
-                  .onPermanentlyDeniedCallback(() {
-                    // Your code
-                  })
-                  .onRestrictedCallback(() {
-                    // Your code
-                  })
-                  .onLimitedCallback(() {
-                    // Your code
-                  })
-                  .onProvisionalCallback(() {
-                    // Your code
-                  })
-                  .request();
+              // Trigger WorkManager task immediately
+              await Workmanager().registerOneOffTask(
+                DateTime.now().millisecondsSinceEpoch.toString(),
+                "simpleTask",
+                initialDelay: const Duration(seconds: 1),
+              );
+              setState(() {
+                _data = 'WorkManager task triggered';
+              });
             },
+            tooltip: 'Trigger WorkManager',
+            child: const Icon(Icons.work),
           ),
           FloatingActionButton(
+            heroTag: 'isolate',
             onPressed: _fetchWithIsolate,
             tooltip: 'Isolate',
             child: Text(
@@ -177,6 +220,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           FloatingActionButton(
+            heroTag: 'compute',
             onPressed: _fetchWithCompute,
             tooltip: 'Compute',
             child: Text(
@@ -185,6 +229,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           FloatingActionButton(
+            heroTag: 'service',
             onPressed: () async {
               if (_isServiceRunning) {
                 await BackgroundServiceHelper.stopService();

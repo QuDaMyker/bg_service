@@ -61,10 +61,20 @@ class BackgroundServiceHelper {
     });
 
     // Start periodic task with optimized interval
-    _startPeriodicTask(
-      service,
-      const Duration(seconds: 5),
-    ); // Increased from 10s to 30s
+    // _startPeriodicTask(
+    //   service,
+    //   const Duration(seconds: 5),
+    // ); // Increased from 10s to 30s
+    if (Platform.isAndroid) {
+      // Update notification to show activity
+      service.invoke('update', {
+        'notification_title': 'Background Service Active',
+        'notification_content':
+            'Last update: ${DateTime.now().hour}:${DateTime.now().minute}',
+      });
+    }
+    _performBackgroundTask(service);
+
   }
 
   static void _startPeriodicTask(ServiceInstance service, Duration interval) {

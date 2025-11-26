@@ -13,6 +13,12 @@
     <!-- Wake lock - use sparingly for battery optimization -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     
+    <!-- WorkManager permissions for background execution -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
     <!-- Location permissions - only if actually needed -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -20,7 +26,8 @@
     <application
         android:label="bg_service"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
 
         <!-- Notification icon for background service -->
         <meta-data
@@ -54,6 +61,11 @@
             android:foregroundServiceType="location|dataSync"
             android:stopWithTask="false"
             tools:replace="android:exported" />
+        <provider
+            android:name="androidx.work.impl.WorkManagerInitializer"
+            android:authorities="${applicationId}.workmanager-init"
+            android:enabled="false"
+            android:exported="false"/>
 
         <!-- Flutter plugin meta -->
         <meta-data
