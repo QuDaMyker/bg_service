@@ -1,9 +1,6 @@
 import 'dart:async';
 
-import 'package:bg_service/api_client.dart';
 import 'package:bg_service/bg/background_service_helper.dart';
-import 'package:bg_service/bg/compute_helper.dart';
-import 'package:bg_service/bg/isolate_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -44,33 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String _data = '';
   bool _isServiceRunning = false;
   StreamSubscription? _serviceSubscription;
-
-  void _fetch() async {
-    final res = await ApiClient.instance.get(id: userId);
-    setState(() {
-      _data = res.toString();
-    });
-  }
-
-  void _fetchWithIsolate() async {
-    setState(() {
-      _data = 'Loading...';
-    });
-    final res = await IsolateHelper().processDataInBackground(userId);
-    setState(() {
-      _data = res.toString();
-    });
-  }
-
-  void _fetchWithCompute() async {
-    setState(() {
-      _data = 'Loading...';
-    });
-    final res = await ComputeHelper().processLargeDataSet(userId);
-    setState(() {
-      _data = res.toString();
-    });
-  }
+  int _selectedInterval = 10; // Default: 10 seconds for testing
 
   @override
   void initState() {
@@ -169,20 +140,81 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           ),
           FloatingActionButton(
-            onPressed: _fetchWithIsolate,
-            tooltip: 'Isolate',
-            child: Text(
-              'Isolate',
-              style: Theme.of(context).textTheme.bodySmall!,
-            ),
-          ),
-          FloatingActionButton(
-            onPressed: _fetchWithCompute,
-            tooltip: 'Compute',
-            child: Text(
-              'Compute',
-              style: Theme.of(context).textTheme.bodySmall!,
-            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Set Interval'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RadioListTile<int>(
+                        title: const Text('10 seconds (testing)'),
+                        value: 10,
+                        groupValue: _selectedInterval,
+                        onChanged: (value) {
+                          setState(() => _selectedInterval = value!);
+                          Navigator.pop(context);
+                          BackgroundServiceHelper.setInterval(
+                            Duration(seconds: value!),
+                          );
+                          setState(() {
+                            _data = 'Interval changed to $value seconds';
+                          });
+                        },
+                      ),
+                      RadioListTile<int>(
+                        title: const Text('30 seconds'),
+                        value: 30,
+                        groupValue: _selectedInterval,
+                        onChanged: (value) {
+                          setState(() => _selectedInterval = value!);
+                          Navigator.pop(context);
+                          BackgroundServiceHelper.setInterval(
+                            Duration(seconds: value!),
+                          );
+                          setState(() {
+                            _data = 'Interval changed to $value seconds';
+                          });
+                        },
+                      ),
+                      RadioListTile<int>(
+                        title: const Text('1 minute'),
+                        value: 60,
+                        groupValue: _selectedInterval,
+                        onChanged: (value) {
+                          setState(() => _selectedInterval = value!);
+                          Navigator.pop(context);
+                          BackgroundServiceHelper.setInterval(
+                            Duration(seconds: value!),
+                          );
+                          setState(() {
+                            _data = 'Interval changed to $value seconds';
+                          });
+                        },
+                      ),
+                      RadioListTile<int>(
+                        title: const Text('1 hour (production)'),
+                        value: 3600,
+                        groupValue: _selectedInterval,
+                        onChanged: (value) {
+                          setState(() => _selectedInterval = value!);
+                          Navigator.pop(context);
+                          BackgroundServiceHelper.setInterval(
+                            Duration(seconds: value!),
+                          );
+                          setState(() {
+                            _data = 'Interval changed to 1 hour';
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Interval',
+            child: const Icon(Icons.timer),
           ),
           FloatingActionButton(
             onPressed: () async {

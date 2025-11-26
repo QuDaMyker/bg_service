@@ -60,11 +60,14 @@ class BackgroundServiceHelper {
       }
     });
 
-    // Start periodic task with optimized interval
+    // Start periodic task with configurable interval
+    // Testing: 10 seconds, Production: 1 hour (3600 seconds)
     _startPeriodicTask(
       service,
-      const Duration(seconds: 5),
-    ); // Increased from 10s to 30s
+      const Duration(
+        seconds: 10,
+      ), // Change to Duration(hours: 1) for production
+    );
   }
 
   static void _startPeriodicTask(ServiceInstance service, Duration interval) {
@@ -174,5 +177,11 @@ class BackgroundServiceHelper {
   // Helper method to check if service is running
   static Future<bool> isServiceRunning() async {
     return await service.isRunning();
+  }
+
+  // Helper method to change the interval
+  static void setInterval(Duration interval) {
+    service.invoke('setInterval', {'seconds': interval.inSeconds});
+    log('Interval change requested: ${interval.inSeconds}s');
   }
 }
