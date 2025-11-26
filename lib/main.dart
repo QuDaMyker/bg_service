@@ -80,10 +80,14 @@ class _MyHomePageState extends State<MyHomePage> {
     // Listen to service updates
     _serviceSubscription = FlutterBackgroundService().on('update').listen((
       event,
-    ) {
+    ) async {
       if (event?['data'] != null) {
         setState(() {
           _data = event!['data'].toString();
+        });
+        await Future.delayed(const Duration(seconds: 1));
+        setState(() {
+          _data = '';
         });
       }
     });
@@ -183,16 +187,26 @@ class _MyHomePageState extends State<MyHomePage> {
           FloatingActionButton(
             onPressed: () async {
               if (_isServiceRunning) {
-                FlutterBackgroundService().invoke('stopService');
+                await BackgroundServiceHelper.stopService();
+                await Future.delayed(const Duration(milliseconds: 500));
+                final isRunning =
+                    await BackgroundServiceHelper.isServiceRunning();
                 setState(() {
-                  _isServiceRunning = false;
-                  _data = 'Service stopped';
+                  _isServiceRunning = isRunning;
+                  _data = isRunning
+                      ? 'Service still running'
+                      : 'Service stopped';
                 });
               } else {
                 await BackgroundServiceHelper.startService();
+                await Future.delayed(const Duration(milliseconds: 500));
+                final isRunning =
+                    await BackgroundServiceHelper.isServiceRunning();
                 setState(() {
-                  _isServiceRunning = true;
-                  _data = 'Service started';
+                  _isServiceRunning = isRunning;
+                  _data = isRunning
+                      ? 'Service started'
+                      : 'Failed to start service';
                 });
               }
             },

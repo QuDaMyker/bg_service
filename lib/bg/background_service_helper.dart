@@ -17,7 +17,7 @@ class BackgroundServiceHelper {
   @pragma('vm:entry-point')
   static Future<void> initialize() async {
     if (Platform.isAndroid || Platform.isIOS) {
-      await service.configure(
+      service.configure(
         iosConfiguration: IosConfiguration(
           autoStart: false, // Don't auto-start on iOS for battery optimization
           onForeground: onStart,
@@ -25,13 +25,13 @@ class BackgroundServiceHelper {
         ),
         androidConfiguration: AndroidConfiguration(
           onStart: onStart,
-          autoStart: true, // Manual control for better resource management
+          autoStart: true,
           isForegroundMode: true,
           notificationChannelId: 'background_service',
-          initialNotificationTitle: 'Background Service',
-          initialNotificationContent: 'Initializing...',
+          initialNotificationTitle: 'Caching Data By Polaris Edge',
+          initialNotificationContent: 'Connecting to server...',
           foregroundServiceNotificationId: 999,
-          autoStartOnBoot: false, // Prevent auto-start on boot
+          autoStartOnBoot: false,
         ),
       );
     }
@@ -157,7 +157,18 @@ class BackgroundServiceHelper {
 
   // Helper method to start service from UI
   static Future<bool> startService() async {
+    final isRunning = await service.isRunning();
+    if (isRunning) {
+      // If already running, restart the timer
+      log('Service already running, restarting timer');
+      return true;
+    }
     return await service.startService();
+  }
+
+  // Helper method to stop service
+  static Future<void> stopService() async {
+    service.invoke('stopService');
   }
 
   // Helper method to check if service is running
